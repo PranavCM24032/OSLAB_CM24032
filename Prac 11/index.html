@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Multi-Lift SCAN | Smart Elevator Optimizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --sidebar-bg: rgba(255, 255, 255, 0.8);
+            --card-bg: rgba(255, 255, 255, 0.6);
+            --accent-primary: #4338ca;
+            --text-primary: #0f172a;
+            --text-muted: #475569;
+            --border-color: rgba(0, 0, 0, 0.05);
+            --lift-a-color: #3b82f6;
+            --lift-b-color: #10b981;
+            --accent-secondary: #059669;
+            --accent-danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        @media (max-width: 1100px) {
+            .container {
+                flex-direction: column;
+            }
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 360px;
+            flex: 0 0 360px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(16px);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.02);
+        }
+
+        .logo h1 {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--accent-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 2px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #4338ca;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .input-group label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            background: #fff;
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .direction-toggle {
+            display: flex;
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 4px;
+            gap: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .direction-toggle button {
+            flex: 1;
+            min-width: 0;
+            background: transparent;
+            border: none;
+            padding: 8px;
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.75rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .direction-toggle button.active {
+            background: #fff;
+            color: var(--accent-primary);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .lift-config-group {
+            background: #fff;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .config-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .primary-btn {
+            width: 100%;
+            background: var(--accent-primary);
+            color: #fff;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 5px;
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 56, 202, 0.3);
+        }
+
+        /* Dashboard */
+        .dashboard {
+            flex: 1;
+            min-width: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            overflow-x: hidden;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-left-width: 5px;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+        }
+
+        .efficiency-pct {
+            font-size: 0.8rem;
+            margin-top: 8px;
+        }
+
+        /* Visualizer */
+        .visualizer-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            align-items: stretch;
+        }
+
+        .building-shaft {
+            flex: 2;
+            min-width: 300px;
+            background: #fff;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            padding: 2rem;
+            position: relative;
+            justify-content: space-around;
+            min-height: 500px;
+        }
+
+        .floor-markers {
+            position: absolute;
+            left: 10px;
+            top: 2rem;
+            bottom: 2rem;
+            width: 40px;
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: space-between;
+            border-right: 1px dashed #e2e8f0;
+        }
+
+        .floor-tick {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            position: absolute;
+            right: 8px;
+        }
+
+        .lift-shaft {
+            flex: 1;
+            position: relative;
+            max-width: 80px;
+        }
+
+        .path-trace {
+            position: absolute;
+            left: 50%;
+            width: 2px;
+            background: #f1f5f9;
+            height: 100%;
+            transform: translateX(-50%);
+        }
+
+        .lift-car {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 55px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            bottom: 0;
+            transition: bottom 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+        }
+
+        .lift-a {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .lift-b {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .lift-display {
+            color: #fff;
+            font-weight: 800;
+            font-size: 1rem;
+        }
+
+        .comparison-chart {
+            flex: 1;
+            min-width: 300px;
+            background: #fff;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            height: 400px;
+        }
+
+        .status-msg {
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 8px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            margin-top: 10px;
+        }
+
+        .algorithm-info {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+
+        .algorithm-info strong {
+            color: var(--accent-primary);
+        }
+
+        @media (max-width: 1100px) {
+            .sidebar {
+                width: 100%;
+                flex: 1 1 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding: 1.5rem;
+            }
+
+            .config-row {
+                grid-template-columns: 1fr 1fr;
+                display: grid;
+            }
+
+            .dashboard {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                padding: 1rem;
+            }
+
+            .dashboard {
+                padding: 1rem;
+            }
+
+            .building-shaft {
+                min-width: 100%;
+                padding: 1rem 1rem 3rem 1rem;
+                min-height: 350px;
+            }
+
+            .comparison-chart {
+                min-width: 100%;
+                height: 300px;
+            }
+
+            .stat-value {
+                font-size: 1.8rem;
+            }
+        }
+
+        @media (max-width: 650px) {
+            .config-row {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .building-shaft {
+                padding-left: 2rem;
+                padding-right: 1rem;
+            }
+
+            .lift-car {
+                width: 32px;
+                height: 38px;
+                border-radius: 6px;
+            }
+
+            .lift-display {
+                font-size: 0.75rem;
+            }
+
+            .floor-markers {
+                width: 25px;
+                left: 5px;
+            }
+
+            .floor-tick {
+                font-size: 0.6rem;
+            }
+        }
+
+        .lift-label {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <header>
+                <div class="logo">
+                    <span style="font-size: 2rem;">🏢</span>
+                    <h1>Multi-Lift SCAN</h1>
+                    <section class="stat-grid">
+                        <div class="algorithm-info">
+                            <strong>🎯 Problem Statement:</strong><br>
+                            We need to optimize requests across multiple lifts to minimize total travel distance and
+                            wait
+                            times.
+                        </div>
+                    </section>
+                </div>
+            </header>
+
+            <div class="input-panel">
+                <div class="input-group">
+                    <label for="maxFloors">🏗️ Total Building Floors</label>
+                    <input type="number" id="maxFloors" value="50" min="2" max="100">
+                </div>
+
+                <div class="lift-config-group">
+                    <h4 style="color: var(--lift-a-color);">🟦 Lift A Config</h4>
+                    <div class="config-row">
+                        <div class="input-group">
+                            <label>Current Floor</label>
+                            <input type="number" id="initialPosA" value="10" min="0">
+                        </div>
+                        <div class="input-group">
+                            <label>Direction</label>
+                            <div class="direction-toggle" id="dirToggleA">
+                                <button data-dir="UP" class="active">UP 🔼</button>
+                                <button data-dir="DOWN">DOWN 🔽</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lift-config-group">
+                    <h4 style="color: var(--lift-b-color);">🟩 Lift B Config</h4>
+                    <div class="config-row">
+                        <div class="input-group">
+                            <label>Current Floor</label>
+                            <input type="number" id="initialPosB" value="40" min="0">
+                        </div>
+                        <div class="input-group">
+                            <label>Direction</label>
+                            <div class="direction-toggle" id="dirToggleB">
+                                <button data-dir="UP">UP 🔼</button>
+                                <button data-dir="DOWN" class="active">DOWN 🔽</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="requests">📋 Floor Requests (comma separated)</label>
+                    <textarea id="requests" rows="3"
+                        placeholder="e.g., 5, 25, 42, 12, 33, 48, 2, 18">5, 25, 42, 12, 33, 48, 2, 18</textarea>
+                </div>
+
+                <button id="optimizeBtn" class="primary-btn">🚀 Run SCAN Optimization</button>
+            </div>
+        </aside>
+
+        <main class="dashboard">
+
+
+            <section class="stat-grid">
+                <div class="stat-card" style="border-left-color: var(--lift-a-color);">
+                    <span class="stat-label">🟦 Lift A Distance</span>
+                    <span class="stat-value" id="distAVal">0</span>
+                    <div class="efficiency-pct">Sequence: <span id="seqA" style="font-weight: 600;">-</span></div>
+                </div>
+                <div class="stat-card" style="border-left-color: var(--lift-b-color);">
+                    <span class="stat-label">🟩 Lift B Distance</span>
+                    <span class="stat-value" id="distBVal">0</span>
+                    <div class="efficiency-pct">Sequence: <span id="seqB" style="font-weight: 600;">-</span></div>
+                </div>
+                <div class="stat-card" style="border-left-color: var(--accent-primary);">
+                    <span class="stat-label">📊 Total System Distance</span>
+                    <span class="stat-value" id="totalDistVal">0</span>
+                    <div class="efficiency-pct">Optimized SCAN Distribution</div>
+                </div>
+            </section>
+
+            <section class="visualizer-container">
+                <div class="building-shaft">
+                    <div class="floor-markers" id="floorMarkers"></div>
+                    <div class="lift-shaft" id="shaftA">
+                        <div class="path-trace"></div>
+                        <div class="lift-car lift-a" id="liftCarA">
+                            <div class="lift-display">10</div>
+                        </div>
+                        <div class="lift-label" style="color: var(--lift-a-color);">LIFT A</div>
+                    </div>
+                    <div class="lift-shaft" id="shaftB">
+                        <div class="path-trace"></div>
+                        <div class="lift-car lift-b" id="liftCarB">
+                            <div class="lift-display">40</div>
+                        </div>
+                        <div class="lift-label" style="color: var(--lift-b-color);">LIFT B</div>
+                    </div>
+                </div>
+                <div class="comparison-chart">
+                    <canvas id="distChart"></canvas>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const backendPort = urlParams.get('port');
+            const apiBaseUrl = backendPort ? `http://localhost:${backendPort}` : '';
+
+            // Inputs
+            const maxFloorsInput = document.getElementById('maxFloors');
+            const initPosA = document.getElementById('initialPosA');
+            const initPosB = document.getElementById('initialPosB');
+            const reqsInput = document.getElementById('requests');
+            const optimizeBtn = document.getElementById('optimizeBtn');
+
+            // Direction Toggles
+            const dirToggleA = document.getElementById('dirToggleA').querySelectorAll('button');
+            const dirToggleB = document.getElementById('dirToggleB').querySelectorAll('button');
+
+            let dirA = "UP";
+            let dirB = "DOWN";
+
+            function setDirToggle(buttons, setDirCallback) {
+                buttons.forEach(btn => {
+                    btn.onclick = () => {
+                        buttons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        setDirCallback(btn.getAttribute('data-dir'));
+                    };
+                });
+            }
+
+            setDirToggle(dirToggleA, (d) => dirA = d);
+            setDirToggle(dirToggleB, (d) => dirB = d);
+
+            const carA = document.getElementById('liftCarA');
+            const carB = document.getElementById('liftCarB');
+            const dispA = carA.querySelector('.lift-display');
+            const dispB = carB.querySelector('.lift-display');
+            const floorMarkers = document.getElementById('floorMarkers');
+
+            let myChart;
+
+            function generateMarkers(max) {
+                floorMarkers.innerHTML = '';
+                const step = Math.max(1, Math.ceil(max / 10));
+                for (let i = 0; i <= max; i += step) {
+                    const tick = document.createElement('div');
+                    tick.className = 'floor-tick';
+                    tick.innerText = `${i}`;
+                    tick.style.bottom = `${(i / max) * 100}%`;
+                    floorMarkers.appendChild(tick);
+                }
+            }
+
+            function animateLift(car, disp, seqContainer, distContainer, sequence, head, maxFloor) {
+                let i = 0;
+                car.style.transition = 'bottom 1.2s cubic-bezier(0.4, 0, 0.2, 1)';
+                car.style.bottom = `${(head / maxFloor) * 100}%`;
+                disp.innerText = head;
+                seqContainer.innerText = head.toString();
+                distContainer.innerText = "0";
+
+                if (!sequence || sequence.length === 0) {
+                    seqContainer.innerText = "No requests";
+                    return;
+                }
+
+                let currentSeq = [head];
+                let currDist = 0;
+                let currPos = head;
+
+                function moveNext() {
+                    if (i >= sequence.length) return;
+                    const target = sequence[i];
+
+                    const distance = Math.abs(target - currPos);
+                    const duration = Math.max(800, Math.min(1500, distance * 30));
+
+                    car.style.transition = `bottom ${duration / 1000}s cubic-bezier(0.4, 0, 0.2, 1)`;
+                    car.style.bottom = `${(target / maxFloor) * 100}%`;
+
+                    let startDist = currDist;
+                    let startTime = null;
+                    let startPos = currPos;
+
+                    function animateDistance(timestamp) {
+                        if (!startTime) startTime = timestamp;
+                        let elapsed = timestamp - startTime;
+                        let progress = Math.min(1, elapsed / duration);
+
+                        let currentFloor = startPos + (target - startPos) * progress;
+                        let currentDist = startDist + distance * progress;
+
+                        disp.innerText = Math.round(currentFloor);
+                        distContainer.innerText = Math.floor(currentDist);
+
+                        if (progress < 1) {
+                            requestAnimationFrame(animateDistance);
+                        } else {
+                            disp.innerText = target;
+                            distContainer.innerText = startDist + distance;
+                        }
+                    }
+                    requestAnimationFrame(animateDistance);
+
+                    setTimeout(() => {
+                        currentSeq.push(target);
+                        seqContainer.innerText = currentSeq.join(' → ');
+                        currDist += distance;
+                        currPos = target;
+                    }, duration - 50);
+
+                    i++;
+                    setTimeout(moveNext, duration + 200);
+                }
+
+                setTimeout(moveNext, 500);
+            }
+
+            function initChart(distA, distB, total, singleDist) {
+                const ctx = document.getElementById('distChart').getContext('2d');
+                if (myChart) myChart.destroy();
+                myChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Lift A', 'Lift B', 'Total System', 'Single Lift (SCAN)'],
+                        datasets: [{
+                            label: 'Distance (floors)',
+                            data: [distA, distB, total, singleDist],
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.8)',
+                                'rgba(16, 185, 129, 0.8)',
+                                'rgba(79, 70, 229, 0.8)',
+                                'rgba(239, 68, 68, 0.8)'
+                            ],
+                            borderColor: ['#3b82f6', '#10b981', '#4f46e5', '#ef4444'],
+                            borderWidth: 2,
+                            borderRadius: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: { font: { weight: 'bold' } }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return `${context.parsed.y} floors traveled`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                grid: { color: 'rgba(0,0,0,0.05)' },
+                                ticks: { color: '#64748b' },
+                                title: {
+                                    display: true,
+                                    text: 'Distance Traveled (floors)',
+                                    color: '#64748b'
+                                }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#64748b', font: { weight: 'bold' } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            async function runOptimization() {
+                const maxFloor = parseInt(maxFloorsInput.value);
+                const headA = parseInt(initPosA.value);
+                const headB = parseInt(initPosB.value);
+                const reqsRaw = reqsInput.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+
+                if (isNaN(headA) || isNaN(headB) || headA < 0 || headB < 0 || headA > maxFloor || headB > maxFloor) {
+                    alert("Please enter valid floor numbers within building range.");
+                    return;
+                }
+                if (reqsRaw.length === 0) {
+                    alert("Please enter at least one floor request.");
+                    return;
+                }
+
+                generateMarkers(maxFloor);
+                
+                const origBtnText = optimizeBtn.innerText;
+                optimizeBtn.innerText = "🔄 Computing routes...";
+
+                try {
+                    if (!apiBaseUrl) {
+                        alert("Backend connection required for LOOK algorithm. Please run app.py instead of opening index.html directly.");
+                        optimizeBtn.innerText = origBtnText;
+                        return;
+                    }
+
+                    const response = await fetch(`${apiBaseUrl}/optimize`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            maxFloor: maxFloor,
+                            requests: reqsRaw,
+                            liftA: { head: headA, dir: dirA },
+                            liftB: { head: headB, dir: dirB }
+                        })
+                    });
+
+                    if (!response.ok) throw new Error("Backend Error: " + response.status);
+                    const result = await response.json();
+
+                    const distAValElem = document.getElementById('distAVal');
+                    const distBValElem = document.getElementById('distBVal');
+                    const totalDistValElem = document.getElementById('totalDistVal');
+
+                    const seqAContainer = document.getElementById('seqA');
+                    const seqBContainer = document.getElementById('seqB');
+
+                    // Update final stats after animation
+                    setTimeout(() => {
+                        distAValElem.innerText = result.liftA.distance;
+                        distBValElem.innerText = result.liftB.distance;
+                        totalDistValElem.innerText = result.totalDistance;
+                    }, 100);
+
+                    animateLift(carA, dispA, seqAContainer, distAValElem, result.liftA.sequence, result.liftA.head, maxFloor);
+                    animateLift(carB, dispB, seqBContainer, distBValElem, result.liftB.sequence, result.liftB.head, maxFloor);
+
+                    initChart(result.liftA.distance, result.liftB.distance, result.totalDistance, result.singleLiftDistance || 0);
+
+                    optimizeBtn.innerText = "✅ Done! Run Again";
+                    setTimeout(() => { optimizeBtn.innerText = origBtnText; }, 3000);
+
+                } catch (err) {
+                    console.error("Error optimizing routes:", err);
+                    alert("Error calculating routes. Ensure Python server is running.");
+                    optimizeBtn.innerText = origBtnText;
+                }
+            }
+
+            optimizeBtn.addEventListener('click', runOptimization);
+
+            // Initial visuals
+            setTimeout(() => {
+                const max = parseInt(maxFloorsInput.value) || 50;
+                carA.style.bottom = `${(parseInt(initPosA.value) / max) * 100}%`;
+                carB.style.bottom = `${(parseInt(initPosB.value) / max) * 100}%`;
+                generateMarkers(max);
+            }, 100);
+        });
+    </script>
+</body>
+
+</html>
